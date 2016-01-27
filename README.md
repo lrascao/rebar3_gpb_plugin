@@ -15,7 +15,7 @@ Add the plugin to your rebar config:
 
     {plugins, [
         { rebar3_gpb_plugin, ".*",
-            {git, "git@github.com:lrascao/rebar3_gpb_plugin.git", {tag, "1.0.0"}}}
+            {git, "git@github.com:lrascao/rebar3_gpb_plugin.git", {tag, "1.0.1"}}}
     ]}.
 
 Configure gpb options (example below), full list can consulted on [gpb's project page](https://github.com/tomas-abrahamsson/gpb):
