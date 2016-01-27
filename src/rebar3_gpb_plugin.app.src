@@ -1,0 +1,15 @@
+{application, rebar3_gpb_plugin, [
+        {description, "A rebar3 gpb plugin for compiling .proto files"},
+        {vsn, "1.0.0"},
+        {registered, []},
+        {applications,
+            [
+                kernel,
+                stdlib,
+                gpb
+            ]},
+        {env,[]},
+        {modules, []},
+        {licenses, ["MIT"]},
+        {links, []}
+    ]}.
