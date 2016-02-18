@@ -16,11 +16,10 @@ Use
 Add the plugin to your rebar config:
 
     {plugins, [
-        { rebar3_gpb_plugin, ".*",
-            {git, "git@github.com:lrascao/rebar3_gpb_plugin.git", {tag, "1.0.1"}}}
+        { rebar3_gpb_plugin, "1.0.1" }
     ]}.
 
-Configure gpb options (example below), full list can consulted on [gpb's project page](https://github.com/tomas-abrahamsson/gpb):
+Configure gpb options (example below), full list can consulted on [gpb's project page](https://github.com/tomas-abrahamsson/gpb) [gpb_compile:file/2](https://github.com/tomas-abrahamsson/gpb/blob/3.19.0/src/gpb_compile.erl#L66-L93):
 
     {gpb_opts, [
         {i, "path/to/proto_dir"},
@@ -30,10 +29,13 @@ Configure gpb options (example below), full list can consulted on [gpb's project
         {strings_as_binaries, true},
         type_specs]}.
 
-Add a hook to automatically generate modules for your protobuf files:
+The `o_erl` and `o_hrl` values are relative to the app's location.
+
+Add a hook to automatically generate modules for your protobuf files and clean them afterwards:
 
     {provider_hooks, [
         {pre, [
             {compile, {protobuf, compile}}
+            {clean, {protobuf, clean}}
         ]}
     ]}.

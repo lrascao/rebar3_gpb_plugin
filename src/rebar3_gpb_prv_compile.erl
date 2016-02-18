@@ -1,11 +1,21 @@
--module(rebar3_gpb_plugin_prv).
+-module(rebar3_gpb_prv_compile).
 
 -export([init/1,
          do/1,
          format_error/1]).
 
 -define(PROVIDER, 'compile').
--define(DEPS, [app_discovery]).
+-define(DEPS, [default, app_discovery]).
+-define(SHORT_DESC, "Automatically compile Google Protocol Buffer (.proto) ",
+                    "files using the gpb compiler").
+-define(DESC,"Configure gpb options (gbp_opts) in your rebar.config, e.g.\n"
+             "  {gpb_opts,["
+             "    {i, \"path/to/proto_dir\"},"
+             "    {module_name_suffix, \"_pb\"},"
+             "    {o_erl, \"path/to/out_src\"},"
+             "    {o_hrl, \"path/to/out_include\"},"
+             "    {strings_as_binaries, true},"
+             "    type_specs]}).").
 
 %% ===================================================================
 %% Public API
@@ -20,8 +30,8 @@ init(State) ->
             {deps, ?DEPS},                % The list of dependencies
             {opts, []},                   % list of options understood by the plugin
             {example, "rebar3 protobuf compile"},
-            {short_desc, "Automatically compile .proto files using the gpb compiler"},
-            {desc, "Google Protobuf compiler"}
+            {short_desc, ?SHORT_DESC},
+            {desc, ?DESC}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -33,28 +43,9 @@ do(State) ->
             AppInfo ->
                 [AppInfo]
            end,
-    lists:foreach(fun(AppInfo) ->
-                Opts = rebar_app_info:opts(AppInfo),
-                {ok, GpbOpts} = dict:find(gpb_opts, Opts),
-                SourceDir = proplists:get_value(i, GpbOpts),
-                TargetDir = proplists:get_value(o_erl, GpbOpts),
-                ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts),
-
-                rebar_base_compiler:run(Opts, [],
-                                        SourceDir, ".proto",
-                                        TargetDir, ModuleNameSuffix ++ ".erl",
-                                        fun(Source, Target, Config) ->
-                                            compile(Source, Target, GpbOpts, Config)
-                                        end)
-        end, Apps),
+    lists:foreach(fun rebar3_gpb_compiler:compile/1, Apps),
     {ok, State}.
 
 -spec format_error(any()) ->  iolist().
 format_error(Reason) ->
     io_lib:format("~p", [Reason]).
-
-%% ===================================================================
-%% Private API
-%% ===================================================================
-compile(Source, _Target, GpbOpts, _Config) ->
-    gpb_compile:file(filename:basename(Source), GpbOpts).
