@@ -5,7 +5,7 @@
          format_error/1]).
 
 -define(PROVIDER, 'compile').
--define(DEPS, [default, app_discovery]).
+-define(DEPS, [{default, app_discovery}]).
 -define(SHORT_DESC, "Automatically compile Google Protocol Buffer (.proto) ",
                     "files using the gpb compiler").
 -define(DESC,"Configure gpb options (gbp_opts) in your rebar.config, e.g.\n"
