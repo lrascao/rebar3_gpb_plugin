@@ -23,7 +23,7 @@ compile(AppInfo) ->
                                                    ?DEFAULT_PROTO_DIR)]),
     TargetErlDir = filename:join([AppOutDir,
                                   proplists:get_value(o_erl, GpbOpts0,
-                                                      ?DEFAULT_OUT_HRL_DIR)]),
+                                                      ?DEFAULT_OUT_ERL_DIR)]),
     TargetHrlDir = filename:join([AppOutDir,
                                   proplists:get_value(o_hrl, GpbOpts0,
                                                       ?DEFAULT_OUT_HRL_DIR)]),
