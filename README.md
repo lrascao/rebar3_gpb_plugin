@@ -15,6 +15,8 @@ Use
 
 Add the plugin to your rebar config:
 
+    {erl_opts, {i, "./_build/default/plugins/gpb/include"}}.
+
     {plugins, [
         { rebar3_gpb_plugin, "1.3.0" }
     ]}.
