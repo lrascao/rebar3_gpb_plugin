@@ -31,6 +31,10 @@ Configure gpb options (example below), full list can consulted on [gpb's project
 
 The `o_erl` and `o_hrl` values are relative to the app's location.
 
+Add the gpb include path (environment tipically is default):
+
+    {erl_opts, {i, "./_build/<environment>/plugins/gpb/include"}}.
+
 Add a hook to automatically generate modules for your protobuf files and clean them afterwards:
 
     {provider_hooks, [
