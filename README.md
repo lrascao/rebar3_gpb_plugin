@@ -36,7 +36,7 @@ The `o_erl` and `o_hrl` values are relative to the app's location.
 Add a hook to automatically generate modules for your protobuf files and clean them afterwards:
 
     {provider_hooks, [
-        {pre, [
+        {post, [
             {compile, {protobuf, compile}}
             {clean, {protobuf, clean}}
         ]}
