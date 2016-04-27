@@ -6,6 +6,7 @@
 -define(DEFAULT_PROTO_DIR, "proto").
 -define(DEFAULT_OUT_ERL_DIR, "src").
 -define(DEFAULT_OUT_HRL_DIR, "include").
+-define(DEFAULT_MODULE_SUFFIX, "").
 
 %% ===================================================================
 %% Public API
@@ -17,7 +18,7 @@ compile(AppInfo) ->
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts0} = dict:find(gpb_opts, Opts),
-    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts0),
+    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts0, ?DEFAULT_MODULE_SUFFIX),
     SourceDir = filename:join([AppDir,
                                proplists:get_value(i, GpbOpts0,
                                                    ?DEFAULT_PROTO_DIR)]),
@@ -45,7 +46,7 @@ clean(AppInfo) ->
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts} = dict:find(gpb_opts, Opts),
-    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts),
+    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts, ?DEFAULT_MODULE_SUFFIX),
     SourceDir = filename:join([AppDir,
                                proplists:get_value(i, GpbOpts)]),
     TargetErlDir = filename:join([AppOutDir,
@@ -76,10 +77,14 @@ compile(Source, _Target, GpbOpts, _Config) ->
             rebar_utils:abort("failed to compile ~s: ~s~n", [Source, ReasonStr])
     end.
 
--spec ensure_dir(filelib:dirname()) -> 'ok'.
+-spec ensure_dir(filelib:dirname()) -> 'ok' | {error, Reason::file:posix()}.
 ensure_dir(OutDir) ->
   %% Make sure that ebin/ exists and is on the path
-  ok = filelib:ensure_dir(filename:join(OutDir, "dummy.beam")).
+  case filelib:ensure_dir(filename:join(OutDir, "dummy.beam")) of
+    ok -> ok;
+    {error, eexist} -> ok;
+    {error, Reason} -> {error, Reason}
+  end.
 
 -spec default_include_opts(string(), proplists:proplist()) -> proplists:proplist().
 default_include_opts(SourceDir, Opts) ->
