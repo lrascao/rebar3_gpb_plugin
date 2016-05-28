@@ -26,7 +26,7 @@ init(State) ->
         {opts, []}]),
   {ok, rebar_state:add_provider(State, Provider)}.
 
--spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
+-spec do(rebar_state:t()) -> {ok, rebar_state:t()}.
 do(State) ->
     Apps = case rebar_state:current_app(State) of
                 undefined -> rebar_state:project_apps(State);
