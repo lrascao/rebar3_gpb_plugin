@@ -48,7 +48,7 @@ clean(AppInfo) ->
     {ok, GpbOpts} = dict:find(gpb_opts, Opts),
     ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts, ?DEFAULT_MODULE_SUFFIX),
     SourceDir = filename:join([AppDir,
-                               proplists:get_value(i, GpbOpts)]),
+                               proplists:get_value(i, GpbOpts, ?DEFAULT_PROTO_DIR)]),
     TargetErlDir = filename:join([AppOutDir,
                                   proplists:get_value(o_erl, GpbOpts,
                                                       ?DEFAULT_OUT_ERL_DIR)]),
@@ -62,6 +62,8 @@ clean(AppInfo) ->
                             F <- GeneratedRootFiles],
     GeneratedHrlFiles = [filename:join([TargetHrlDir, F ++ ".hrl"]) ||
                             F <- GeneratedRootFiles],
+    rebar_api:debug("deleting [~p, ~p]",
+      [GeneratedErlFiles, GeneratedHrlFiles]),
     rebar_file_utils:delete_each(GeneratedErlFiles ++ GeneratedHrlFiles).
 
 %% ===================================================================
