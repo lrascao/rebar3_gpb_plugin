@@ -28,7 +28,12 @@ compile(AppInfo) ->
     TargetHrlDir = filename:join([AppOutDir,
                                   proplists:get_value(o_hrl, GpbOpts0,
                                                       ?DEFAULT_OUT_HRL_DIR)]),
-    ok = ensure_dir(TargetErlDir), ok = ensure_dir(TargetHrlDir),
+    rebar_api:debug("reading proto files from ~p, generating \"~s.erl\" to ~p and \"~s.hrl\" to ~p",
+      [SourceDir, ModuleNameSuffix, TargetErlDir, ModuleNameSuffix, TargetHrlDir]),
+    rebar_api:debug("making sure that target erl dir ~p exists", [TargetErlDir]),
+    ok = ensure_dir(TargetErlDir),
+    rebar_api:debug("making sure that target hrl dir ~p exists", [TargetHrlDir]),
+    ok = ensure_dir(TargetHrlDir),
     %% set the full path for the output directories
     GpbOpts = default_include_opts(SourceDir,
                     target_erl_opt(TargetErlDir,
@@ -71,6 +76,7 @@ clean(AppInfo) ->
 %% ===================================================================
 -spec compile(string(), string(), proplists:proplist(), term()) -> ok.
 compile(Source, _Target, GpbOpts, _Config) ->
+    rebar_api:debug("gpb opts: ~p", [GpbOpts]),
     case gpb_compile:file(filename:basename(Source), GpbOpts) of
         ok ->
             ok;
@@ -82,7 +88,13 @@ compile(Source, _Target, GpbOpts, _Config) ->
 -spec ensure_dir(filelib:dirname()) -> 'ok'.
 ensure_dir(OutDir) ->
   %% Make sure that ebin/ exists and is on the path
-  ok = filelib:ensure_dir(filename:join(OutDir, "dummy.beam")).
+  case filelib:ensure_dir(filename:join(OutDir, "dummy.beam")) of
+    ok -> ok;
+    {error, eexist} ->
+      rebar_utils:abort("unable to ensure dir ~p, is it maybe a broken symlink?",
+        [OutDir]);
+    Error -> Error
+  end.
 
 -spec default_include_opts(string(), proplists:proplist()) -> proplists:proplist().
 default_include_opts(SourceDir, Opts) ->
