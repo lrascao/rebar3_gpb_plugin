@@ -15,7 +15,7 @@ Use
 
 Add the plugin to your rebar config:
 
-    {erl_opts, {i, "./_build/default/plugins/gpb/include"}}.
+    {erl_opts, [{i, "./_build/default/plugins/gpb/include"}]}.
 
     {plugins, [
         { rebar3_gpb_plugin, "1.3.1" }
@@ -31,11 +31,15 @@ Configure gpb options (example below), full list can consulted on [gpb's project
         {strings_as_binaries, true},
         type_specs]}.
 
-The `o_erl` and `o_hrl` values are relative to the app's location.
+The `i`, `o_erl` and `o_hrl` option values are relative to the app's location.
+Default values are:
+    * `{i, "proto"}`
+    * `{o_erl, "src"}`
+    * `{o_hrl, "include"}`
 
 Add the gpb include path (environment tipically is default):
 
-    {erl_opts, {i, "./_build/<environment>/plugins/gpb/include"}}.
+    {erl_opts, [{i, "./_build/<environment>/plugins/gpb/include"}]}.
 
 Add a hook to automatically generate modules for your protobuf files and clean them afterwards:
 
