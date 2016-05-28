@@ -85,7 +85,7 @@ compile(Source, _Target, GpbOpts, _Config) ->
             rebar_utils:abort("failed to compile ~s: ~s~n", [Source, ReasonStr])
     end.
 
--spec ensure_dir(filelib:dirname()) -> 'ok'.
+-spec ensure_dir(filelib:dirname()) -> 'ok' | {error, Reason::file:posix()}.
 ensure_dir(OutDir) ->
   %% Make sure that ebin/ exists and is on the path
   case filelib:ensure_dir(filename:join(OutDir, "dummy.beam")) of
@@ -93,7 +93,7 @@ ensure_dir(OutDir) ->
     {error, eexist} ->
       rebar_utils:abort("unable to ensure dir ~p, is it maybe a broken symlink?",
         [OutDir]);
-    Error -> Error
+    {error, Reason} -> {error, Reason}
   end.
 
 -spec default_include_opts(string(), proplists:proplist()) -> proplists:proplist().
