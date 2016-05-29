@@ -44,7 +44,7 @@ Add the gpb include path (environment tipically is default):
 Add a hook to automatically generate modules for your protobuf files and clean them afterwards:
 
     {provider_hooks, [
-        {pre, [
+        {post, [
             {compile, {protobuf, compile}}
             {clean, {protobuf, clean}}
         ]}
