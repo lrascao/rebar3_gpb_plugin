@@ -45,7 +45,7 @@ Add a hook to automatically generate modules for your protobuf files and clean t
 
     {provider_hooks, [
         {pre, [
-            {compile, {protobuf, compile}}
+            {compile, {protobuf, compile}},
             {clean, {protobuf, clean}}
         ]}
     ]}.
