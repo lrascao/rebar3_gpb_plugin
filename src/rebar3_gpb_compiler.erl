@@ -18,6 +18,8 @@ compile(AppInfo) ->
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts0} = dict:find(gpb_opts, Opts),
+    %% check if non-recursive
+    Recursive = proplists:get_value(recursive, GpbOpts0, true),
     ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts0, ?DEFAULT_MODULE_SUFFIX),
     SourceDir = filename:join([AppDir,
                                proplists:get_value(i, GpbOpts0,
@@ -35,15 +37,18 @@ compile(AppInfo) ->
     rebar_api:debug("making sure that target hrl dir ~p exists", [TargetHrlDir]),
     ok = ensure_dir(TargetHrlDir),
     %% set the full path for the output directories
-    GpbOpts = default_include_opts(SourceDir,
+    %% remove the plugin specific options since gpb will not understand them
+    GpbOpts = remove_plugin_opts(
+                default_include_opts(SourceDir,
                     target_erl_opt(TargetErlDir,
-                        target_hrl_opt(TargetHrlDir, GpbOpts0))),
+                        target_hrl_opt(TargetHrlDir, GpbOpts0)))),
     rebar_base_compiler:run(Opts, [],
                             SourceDir, ".proto",
                             TargetErlDir, ModuleNameSuffix ++ ".erl",
                             fun(Source, Target, Config) ->
                                 compile(Source, Target, GpbOpts, Config)
-                            end).
+                            end,
+                            [check_last_mod, {recursive, Recursive}]).
 
 -spec clean(rebar_app_info:t()) -> ok.
 clean(AppInfo) ->
@@ -76,7 +81,8 @@ clean(AppInfo) ->
 %% ===================================================================
 -spec compile(string(), string(), proplists:proplist(), term()) -> ok.
 compile(Source, _Target, GpbOpts, _Config) ->
-    rebar_api:debug("gpb opts: ~p", [GpbOpts]),
+    rebar_api:debug("compiling ~p", [Source]),
+    rebar_api:debug("opts: ~p", [GpbOpts]),
     case gpb_compile:file(filename:basename(Source), GpbOpts) of
         ok ->
             ok;
@@ -107,3 +113,13 @@ target_erl_opt(Dir, Opts) ->
 -spec target_hrl_opt(string(), proplists:proplist()) -> proplists:proplist().
 target_hrl_opt(Dir, Opts) ->
     lists:keystore(o_hrl, 1, Opts, {o_hrl, Dir}).
+
+-spec remove_plugin_opts(proplists:proplists()) -> proplists:proplist().
+remove_plugin_opts(Opts) ->
+    remove_plugin_opts(Opts, [recursive]).
+
+-spec remove_plugin_opts(proplists:proplist(), list()) -> proplists:proplist().
+remove_plugin_opts(Opts, []) -> Opts;
+remove_plugin_opts(Opts0, [OptToRemove | Rest]) ->
+    Opts = lists:keydelete(OptToRemove, 1, Opts0),
+    remove_plugin_opts(Opts, Rest).

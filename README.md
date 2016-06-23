@@ -31,6 +31,13 @@ Configure gpb options (example below), full list can consulted on [gpb's project
         {strings_as_binaries, true},
         type_specs]}.
 
+Plugin specific options (can be used alonside the gpb ones):
+
+    {gpb_opts, [
+        {recursive, boolean()},     %% look recursively through the provided folders to look for .proto files (default is true)
+    ]}.
+
+
 The `i`, `o_erl` and `o_hrl` option values are relative to the app's location.
 Default values are:
     * `{i, "proto"}`
