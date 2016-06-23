@@ -31,18 +31,22 @@ Configure gpb options (example below), full list can consulted on [gpb's project
         {strings_as_binaries, true},
         type_specs]}.
 
-Plugin specific options (can be used alonside the gpb ones):
-
-    {gpb_opts, [
-        {recursive, boolean()},     %% look recursively through the provided folders to look for .proto files (default is true)
-    ]}.
-
-
 The `i`, `o_erl` and `o_hrl` option values are relative to the app's location.
 Default values are:
     * `{i, "proto"}`
     * `{o_erl, "src"}`
     * `{o_hrl, "include"}`
+
+Plugin specific options (can be used together the gpb ones):
+
+    {gpb_opts, [
+        {recursive, boolean()},
+        {ipath, "path/to/another/proto_dir"}
+    ]}.
+
+Plugin specific options:
+    * `{recursive, boolean()}` - look recursively through the provided folders to look for .proto files (default is true)
+    * `{ipath, "path/to/another/proto_dir"}` - paths that are to be added to gpb's include path but not searched for .proto files (useful for importing .proto files from other .proto).
 
 Add the gpb include path (environment tipically is default):
 
