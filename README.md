@@ -44,9 +44,11 @@ Plugin specific options (can be used together the gpb ones):
         {ipath, "path/to/another/proto_dir"}
     ]}.
 
-Plugin specific options:
-    * `{recursive, boolean()}` - look recursively through the provided folders to look for .proto files (default is true)
-    * `{ipath, "path/to/another/proto_dir"}` - paths that are to be added to gpb's include path but not searched for .proto files (useful for importing .proto files from other .proto).
+* `{recursive, boolean()}` - look recursively through the provided folders
+  to look for .proto files (default is true)
+* `{ipath, "path/to/another/proto_dir"}` - paths that are to be added to gpb's
+  include path but not searched for .proto files (useful for importing .proto
+  files from other .proto).
 
 Add the gpb include path (environment tipically is default):
 
