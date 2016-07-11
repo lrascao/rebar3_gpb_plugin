@@ -26,6 +26,7 @@ Configure gpb options (example below), full list can consulted on [gpb's project
     {gpb_opts, [
         {i, "path/to/proto_dir"},
         {module_name_suffix, "_pb"},
+        %{o, "path/to/out_dir"},    %% both .erl and .hrl are generated here
         {o_erl, "path/to/out_src"},
         {o_hrl, "path/to/out_include"},
         {strings_as_binaries, true},
@@ -33,9 +34,9 @@ Configure gpb options (example below), full list can consulted on [gpb's project
 
 The `i`, `o_erl` and `o_hrl` option values are relative to the app's location.
 Default values are:
-    * `{i, "proto"}`
-    * `{o_erl, "src"}`
-    * `{o_hrl, "include"}`
+* `{i, "proto"}`
+* `{o_erl, "src"}`
+* `{o_hrl, "include"}`
 
 Plugin specific options (can be used together the gpb ones):
 
