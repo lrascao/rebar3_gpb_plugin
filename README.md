@@ -18,7 +18,7 @@ Add the plugin to your rebar config:
     {erl_opts, [{i, "./_build/default/plugins/gpb/include"}]}.
 
     {plugins, [
-        { rebar3_gpb_plugin, "1.5.2" }
+        { rebar3_gpb_plugin, "1.6.0" }
     ]}.
 
 Configure gpb options (example below), full list can consulted on [gpb's project page](https://github.com/tomas-abrahamsson/gpb) [gpb_compile:file/2](https://github.com/tomas-abrahamsson/gpb/blob/3.19.0/src/gpb_compile.erl#L66-L93):
@@ -44,9 +44,11 @@ Plugin specific options (can be used together the gpb ones):
         {ipath, "path/to/another/proto_dir"}
     ]}.
 
-Plugin specific options:
-    * `{recursive, boolean()}` - look recursively through the provided folders to look for .proto files (default is true)
-    * `{ipath, "path/to/another/proto_dir"}` - paths that are to be added to gpb's include path but not searched for .proto files (useful for importing .proto files from other .proto).
+* `{recursive, boolean()}` - look recursively through the provided folders
+  to look for .proto files (default is true)
+* `{ipath, "path/to/another/proto_dir"}` - paths that are to be added to gpb's
+  include path but not searched for .proto files (useful for importing .proto
+  files from other .proto).
 
 Add the gpb include path (environment tipically is default):
 
