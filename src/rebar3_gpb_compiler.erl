@@ -129,7 +129,7 @@ filter_included_proto(Source, Dep, GpbOpts) ->
                                              GpbOpts ++ [to_proto_defs, return]),
     Imports = lists:map(fun(Import0) ->
                           {ok, Import} = gpb_compile:locate_import(Import0, GpbOpts),
-                          Import
+                          filename:absname(Import)
                         end, lists:usort(gpb_parse:fetch_imports(Defs))),
     case lists:member(Dep, Imports) of
       true -> {true, Source};
