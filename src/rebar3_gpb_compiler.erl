@@ -35,17 +35,23 @@ compile(AppInfo) ->
     rebar_api:debug("reading proto files from ~p, generating \".erl\" to ~p "
                     "and \".hrl\" to ~p",
       [SourceDirs, TargetErlDir, TargetHrlDir]),
-    %% set the full path for the output directories
-    %% remove the plugin specific options since gpb will not understand them
-    GpbOpts = remove_plugin_opts(
-                default_include_opts(AppDir,
-                    target_erl_opt(TargetErlDir,
-                        target_hrl_opt(TargetHrlDir, GpbOpts0)))),
 
+    %% search for .proto files
     Protos = lists:foldl(fun(SourceDir, Acc) ->
                             Acc ++ discover(AppDir, SourceDir, [{recursive, Recursive}])
                          end, [], SourceDirs),
-    rebar_api:debug("proto files found: ~p", [Protos]),
+    rebar_api:debug("proto files found~s: ~p",
+      [case Recursive of true -> " recursively"; false -> "" end, Protos]),
+
+    %% set the full path for the output directories
+    %% add to include path dir locations of the protos
+    %% remove the plugin specific options since gpb will not understand them
+    GpbOpts = remove_plugin_opts(
+                proto_include_paths(AppDir, Protos,
+                  default_include_opts(AppDir,
+                      target_erl_opt(TargetErlDir,
+                          target_hrl_opt(TargetHrlDir, GpbOpts0))))),
+
     compile(Protos, TargetErlDir, GpbOpts, Protos),
     ok.
 
@@ -201,3 +207,7 @@ find_proto_files(AppDir, GpbOpts) ->
                                    ".*\.proto\$")
               end, [], proplists:get_all_values(i, GpbOpts)).
 
+proto_include_paths(_AppDir, [], Opts) -> Opts;
+proto_include_paths(AppDir, [Proto | Protos], Opts) ->
+  ProtoDir = filename:join([AppDir, filename:dirname(Proto)]),
+  proto_include_paths(AppDir, Protos, Opts ++ [{i, ProtoDir}]).
