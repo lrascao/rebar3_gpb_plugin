@@ -107,7 +107,14 @@ compile([Proto | Rest], TargetErlDir, GpbOpts, Protos) ->
             lists:foreach(fun(Dep) ->
                             DepTarget = target_file(Dep, ModuleNamePrefix, ModuleNameSuffix,
                                                     TargetErlDir),
-                            _ = file:change_time(DepTarget, calendar:local_time()),
+                            %% we want to force compilation in this case so we must trick
+                            %% the plugin into believing that the proto is more recent than the
+                            %% target, this means we need to set the last changed time on the
+                            %% target to a time earlier than the proto
+                            Seconds = calendar:datetime_to_gregorian_seconds(
+                                        filelib:last_modified(Dep)) - 60,
+                            _ = file:change_time(DepTarget,
+                                                 calendar:gregorian_seconds_to_datetime(Seconds)),
                             rebar_api:debug("touched ~p", [DepTarget])
                           end, Deps0),
             Deps0;
