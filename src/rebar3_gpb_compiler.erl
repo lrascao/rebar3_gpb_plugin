@@ -6,6 +6,7 @@
 -define(DEFAULT_PROTO_DIR, "proto").
 -define(DEFAULT_OUT_ERL_DIR, "src").
 -define(DEFAULT_OUT_HRL_DIR, "include").
+-define(DEFAULT_MODULE_PREFIX, "").
 -define(DEFAULT_MODULE_SUFFIX, "").
 
 %% ===================================================================
@@ -20,8 +21,6 @@ compile(AppInfo) ->
     {ok, GpbOpts0} = dict:find(gpb_opts, Opts),
     %% check if non-recursive
     Recursive = proplists:get_value(recursive, GpbOpts0, true),
-    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts0,
-                                           ?DEFAULT_MODULE_SUFFIX),
     SourceDirs = proplists:get_all_values(i, GpbOpts0),
     TargetErlDir = filename:join([AppOutDir,
                                   proplists:get_value(o_erl, GpbOpts0,
@@ -33,24 +32,27 @@ compile(AppInfo) ->
     ok = ensure_dir(TargetErlDir),
     rebar_api:debug("making sure that target hrl dir ~p exists", [TargetHrlDir]),
     ok = ensure_dir(TargetHrlDir),
-    rebar_api:debug("reading proto files from ~p, generating \"~s.erl\" to ~p "
-                    "and \"~s.hrl\" to ~p",
-      [SourceDirs, ModuleNameSuffix, TargetErlDir, ModuleNameSuffix, TargetHrlDir]),
+    rebar_api:debug("reading proto files from ~p, generating \".erl\" to ~p "
+                    "and \".hrl\" to ~p",
+      [SourceDirs, TargetErlDir, TargetHrlDir]),
+
+    %% search for .proto files
+    Protos = lists:foldl(fun(SourceDir, Acc) ->
+                            Acc ++ discover(AppDir, SourceDir, [{recursive, Recursive}])
+                         end, [], SourceDirs),
+    rebar_api:debug("proto files found~s: ~p",
+      [case Recursive of true -> " recursively"; false -> "" end, Protos]),
+
     %% set the full path for the output directories
+    %% add to include path dir locations of the protos
     %% remove the plugin specific options since gpb will not understand them
     GpbOpts = remove_plugin_opts(
-                default_include_opts(AppDir,
-                    target_erl_opt(TargetErlDir,
-                        target_hrl_opt(TargetHrlDir, GpbOpts0)))),
-    lists:foreach(fun(SourceDir) ->
-                    ok = rebar_base_compiler:run(Opts, [],
-                                 filename:join(AppDir, SourceDir), ".proto",
-                                 TargetErlDir, ModuleNameSuffix ++ ".erl",
-                                 fun(Source, Target, Config) ->
-                                    compile(Source, Target, GpbOpts, Config)
-                                 end,
-                                 [check_last_mod, {recursive, Recursive}])
-                  end, SourceDirs),
+                proto_include_paths(AppDir, Protos,
+                  default_include_opts(AppDir,
+                      target_erl_opt(TargetErlDir,
+                          target_hrl_opt(TargetHrlDir, GpbOpts0))))),
+
+    compile(Protos, TargetErlDir, GpbOpts, Protos),
     ok.
 
 -spec clean(rebar_app_info:t()) -> ok.
@@ -81,9 +83,79 @@ clean(AppInfo) ->
 %% ===================================================================
 %% Private API
 %% ===================================================================
--spec compile(string(), string(), proplists:proplist(), term()) -> ok.
-compile(Source, _Target, GpbOpts, _Config) ->
-    rebar_api:debug("compiling ~p", [Source]),
+discover(AppDir, SourceDir, Opts) ->
+    %% Convert simple extension to proper regex
+    SourceExtRe = "^[^._].*\\" ++ ".proto" ++ [$$],
+
+    Recursive = proplists:get_value(recursive, Opts, true),
+    %% Find all possible source files
+    rebar_utils:find_files(filename:join([AppDir, SourceDir]),
+                           SourceExtRe, Recursive).
+
+compile([], _TargetErlDir, _GpbOpts, _Protos) -> ok;
+compile([Proto | Rest], TargetErlDir, GpbOpts, Protos) ->
+    ModuleNamePrefix = proplists:get_value(module_name_prefix, GpbOpts,
+                                           ?DEFAULT_MODULE_PREFIX),
+    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts,
+                                           ?DEFAULT_MODULE_SUFFIX),
+    Target = target_file(Proto, ModuleNamePrefix, ModuleNameSuffix, TargetErlDir),
+    Deps =
+      case filelib:last_modified(Target) < filelib:last_modified(Proto) of
+          true ->
+            ok = compile(Proto, Target, GpbOpts),
+            %% now we know that thid proto needed compilation we check
+            %% for other protos that might have included this one and ensure that
+            %% those are compiled as well
+            Deps0 = get_dependencies(Proto, Protos, GpbOpts),
+            rebar_api:debug("protos that include ~p: ~p",
+              [Proto, Deps0]),
+            %% now touch the targets of each of the deps so they get remade again
+            lists:foreach(fun(Dep) ->
+                            DepTarget = target_file(Dep, ModuleNamePrefix, ModuleNameSuffix,
+                                                    TargetErlDir),
+                            %% we want to force compilation in this case so we must trick
+                            %% the plugin into believing that the proto is more recent than the
+                            %% target, this means we need to set the last changed time on the
+                            %% target to a time earlier than the proto
+                            Seconds = calendar:datetime_to_gregorian_seconds(
+                                        filelib:last_modified(Dep)) - 60,
+                            _ = file:change_time(DepTarget,
+                                                 calendar:gregorian_seconds_to_datetime(Seconds)),
+                            rebar_api:debug("touched ~p", [DepTarget])
+                          end, Deps0),
+            Deps0;
+          false ->
+              []
+      end,
+    compile(Rest ++ Deps, TargetErlDir, GpbOpts, Protos).
+
+get_dependencies(Proto, Protos, GpbOpts) ->
+    %% go through each of the protos and for each one
+    %% check if it included the provided proto, return
+    %% the ones tht do
+    lists:filtermap(fun(Proto0) ->
+                      filter_included_proto(Proto0, Proto, GpbOpts)
+                    end, Protos).
+
+filter_included_proto(Source, Dep, GpbOpts) ->
+    {ok, Defs, _Warnings} = gpb_compile:file(filename:basename(Source),
+                                             GpbOpts ++ [to_proto_defs, return]),
+    Imports = lists:map(fun(Import0) ->
+                          {ok, Import} = gpb_compile:locate_import(Import0, GpbOpts),
+                          filename:absname(Import)
+                        end, lists:usort(gpb_parse:fetch_imports(Defs))),
+    case lists:member(Dep, Imports) of
+      true -> {true, Source};
+      false -> false
+    end.
+
+target_file(Proto, ModuleNamePrefix, ModuleNameSuffix, TargetErlDir) ->
+    Module = filename:basename(Proto, ".proto"),
+    filename:join([TargetErlDir, ModuleNamePrefix ++ Module ++ ModuleNameSuffix ++ ".erl"]).
+
+-spec compile(string(), string(), proplists:proplist()) -> ok.
+compile(Source, Target, GpbOpts) ->
+    rebar_api:debug("compiling ~p to ~p", [Source, Target]),
     rebar_api:debug("opts: ~p", [GpbOpts]),
     case gpb_compile:file(filename:basename(Source), GpbOpts) of
         ok ->
@@ -135,3 +207,7 @@ find_proto_files(AppDir, GpbOpts) ->
                                    ".*\.proto\$")
               end, [], proplists:get_all_values(i, GpbOpts)).
 
+proto_include_paths(_AppDir, [], Opts) -> Opts;
+proto_include_paths(AppDir, [Proto | Protos], Opts) ->
+  ProtoDir = filename:join([AppDir, filename:dirname(Proto)]),
+  proto_include_paths(AppDir, Protos, Opts ++ [{i, ProtoDir}]).
