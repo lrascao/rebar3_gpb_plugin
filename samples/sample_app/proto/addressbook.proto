@@ -1,9 +1,9 @@
-syntax "proto2";
+syntax = "proto2";
 
 //
 // Example from https://developers.google.com/protocol-buffers/
 //
-message Person {
+message person {
   required string name = 1;
   required int32 id = 2;
   optional string email = 3;
