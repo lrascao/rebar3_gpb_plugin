@@ -11,12 +11,13 @@ This project was created using rebar3:
 	
 After which the following files were added or modified
 
-- add the rebar3_gpb_plugin to your rebar.config
+- add the rebar3_gpb_plugin to your rebar.config.
 - add a directory for your [protocol buffer](https://developers.google.com/protocol-buffers/) definition.
-- add a simple protocol buffer definition
-- add a module to test your protocol buffer
-- compile your project 
-- finally call your function
+- add an empty include directory for the generated protocol buffer definitions.
+- add a simple protocol buffer definition.
+- add a module to test your protocol buffer.
+- compile your project.
+- finally call your function.
 
 Build
 -----
@@ -25,9 +26,12 @@ Build
 
 	$ rebar3 shell
 	
-	> sample_proto_test:create_empty_person().
+	1> P = sample_proto_test:create_empty_person().
+	{person,undefined,undefined,undefined}
 	
-	> sample_proto_test:create_named_person(<<"John">>).
+	
+	2> P2 = sample_proto_test:create_named_person(<<"John">>).
+	{person,<<"John">>,undefined,undefined}
 	
 	
 
