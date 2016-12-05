@@ -100,3 +100,8 @@ The solution is to create  `apps/<project>/rebar.config` and specify `gpb_opts` 
         ]}
  ]}.
  ```
+
+More examples
+-------------
+
+Complete usage examples are located in [doc/samples](/doc/samples).
