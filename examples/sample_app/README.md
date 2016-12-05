@@ -7,17 +7,21 @@ This project is not meant to show any interesting OTP behaviour, just how to com
 
 This project was created using rebar3:
 
-	rebar3 new app sample_app
+	$ rebar3 new app sample_app
+	
+	$ rebar3 --version
+	rebar 3.3.2 on Erlang/OTP 19 Erts 8.1
 	
 After which the following files were added or modified
 
-- add the rebar3_gpb_plugin to your rebar.config.
-- add a directory for your [protocol buffer](https://developers.google.com/protocol-buffers/) definition.
-- add an empty include directory for the generated protocol buffer definitions.
-- add a simple protocol buffer definition.
-- add a module to test your protocol buffer.
-- compile your project.
-- finally call your function.
+	- add the rebar3_gpb_plugin to your rebar.config.
+	- add a directory for your [protocol buffer](https://developers.google.com/protocol-buffers/) definition.
+	- add an empty include directory for the generated protocol buffer definitions.
+	- add a pattern to .gitignore generated files from git.
+	- add a simple protocol buffer definition. (addressbook.proto)
+	- add a module to test your protocol buffer.
+	- compile your project.
+	- finally call your function.
 
 Build
 -----
