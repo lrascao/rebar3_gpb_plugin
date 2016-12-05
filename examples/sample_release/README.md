@@ -27,14 +27,16 @@ for the app named sample_release add the following:
 	- add a module to test your protocol buffer.
 	- add a rebar.config for the sample_release app to compile to protocol buffer definitions.
 
-finally:
-
-	- compile your project.
-	- finally call your function.
-
 for the app named other_app add the following:
 
 	- a module to test using the protocol buffer definitions from the sample_release app
+	- use the include-lib macro to include the generated protocol buffer record definition from app sample_release.
+
+finally:
+
+	- compile your project.
+	- call your function.
+
 
 Build
 -----
