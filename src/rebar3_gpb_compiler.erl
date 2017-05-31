@@ -61,6 +61,8 @@ clean(AppInfo) ->
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts} = dict:find(gpb_opts, Opts),
+    ModuleNamePrefix = proplists:get_value(module_name_prefix, GpbOpts,
+                                           ?DEFAULT_MODULE_PREFIX),
     ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts,
                                            ?DEFAULT_MODULE_SUFFIX),
     TargetErlDir = filename:join([AppOutDir,
@@ -70,7 +72,8 @@ clean(AppInfo) ->
                                   proplists:get_value(o_hrl, GpbOpts,
                                                       ?DEFAULT_OUT_HRL_DIR)]),
     ProtoFiles = find_proto_files(AppDir, GpbOpts),
-    GeneratedRootFiles = [filename:rootname(filename:basename(ProtoFile)) ++
+    GeneratedRootFiles = [ModuleNamePrefix ++
+                          filename:rootname(filename:basename(ProtoFile)) ++
                           ModuleNameSuffix || ProtoFile <- ProtoFiles],
     GeneratedErlFiles = [filename:join([TargetErlDir, F ++ ".erl"]) ||
                             F <- GeneratedRootFiles],
