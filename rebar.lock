@@ -1,6 +1,6 @@
 {"1.1.0",
-[{<<"gpb">>,{pkg,<<"gpb">>,<<"3.27.4">>},0}]}.
+[{<<"gpb">>,{pkg,<<"gpb">>,<<"3.27.5">>},0}]}.
 [
 {pkg_hash,[
- {<<"gpb">>, <<"0BE08756A64A4A9F4E74E6E50ACE568CAD2577F52A9EB9D5985AA7A7E5D73BCB">>}]}
+ {<<"gpb">>, <<"AB23C1737C29FDE0AD8EBAFF77021F8E8B9AAE968C26DCD69CE9A4E294AD5E8E">>}]}
 ].
