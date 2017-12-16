@@ -19,7 +19,7 @@ Add the plugin to your rebar config:
 {erl_opts, [{i, "./_build/default/plugins/gpb/include"}]}.
 
 {plugins, [
-    { rebar3_gpb_plugin, "2.0.1" }
+    { rebar3_gpb_plugin, "2.1.0" }
 ]}.
 ```
 
@@ -27,7 +27,7 @@ Configure gpb options (example below), full list can consulted on [gpb's project
 
 ```erlang
 {gpb_opts, [
-    {i, "path/to/proto_dir"},
+    {i, "path/to/proto_dir"} | {i, {deps, "relative/path/from/deps/to/proto_dir"}},
     {module_name_suffix, "_pb"},
     %{o, "path/to/out_dir"},    %% both .erl and .hrl are generated here
     {o_erl, "path/to/out_src"},
@@ -50,11 +50,15 @@ Plugin specific options (can be used together the gpb ones):
     {ipath, "path/to/another/proto_dir"}
 ]}.
 ```
+
 * `{recursive, boolean()}` - look recursively through the provided folders
   to look for .proto files (default is true)
 * `{ipath, "path/to/another/proto_dir"}` - paths that are to be added to gpb's
   include path but not searched for .proto files (useful for importing .proto
   files from other .proto).
+* `{i, {deps, "relative/path/from/deps/to/proto_dir"}` - allows you to compile
+  proto files that were declared and fetched as app dependencies, the [rebar_raw_resource](https://github.com/basho/rebar_raw_resource)
+  plugin is a good fit for this use case.
 
 Add the gpb include path (environment tipically is default):
 
