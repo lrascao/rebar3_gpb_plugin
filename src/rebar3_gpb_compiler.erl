@@ -1,7 +1,7 @@
 -module(rebar3_gpb_compiler).
 
--export([compile/1,
-         clean/1]).
+-export([compile/2,
+         clean/2]).
 
 -define(DEFAULT_PROTO_DIR, "proto").
 -define(DEFAULT_OUT_ERL_DIR, "src").
@@ -13,9 +13,11 @@
 %% Public API
 %% ===================================================================
 
--spec compile(rebar_app_info:t()) -> ok.
-compile(AppInfo) ->
+-spec compile(rebar_app_info:t(),
+              rebar_state:t()) -> ok.
+compile(AppInfo, State) ->
     AppDir = rebar_app_info:dir(AppInfo),
+    DepsDir = rebar_dir:deps_dir(State),
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts0} = dict:find(gpb_opts, Opts),
@@ -37,8 +39,10 @@ compile(AppInfo) ->
       [SourceDirs, TargetErlDir, TargetHrlDir]),
 
     %% search for .proto files
-    Protos = lists:foldl(fun(SourceDir, Acc) ->
-                            Acc ++ discover(AppDir, SourceDir, [{recursive, Recursive}])
+    Protos = lists:foldl(fun({deps, SourceDir}, Acc) ->
+                                Acc ++ discover(DepsDir, SourceDir, [{recursive, Recursive}]);
+                            (SourceDir, Acc) ->
+                                Acc ++ discover(AppDir, SourceDir, [{recursive, Recursive}])
                          end, [], SourceDirs),
     rebar_api:debug("proto files found~s: ~p",
       [case Recursive of true -> " recursively"; false -> "" end, Protos]),
@@ -48,15 +52,16 @@ compile(AppInfo) ->
     %% remove the plugin specific options since gpb will not understand them
     GpbOpts = remove_plugin_opts(
                 proto_include_paths(AppDir, Protos,
-                  default_include_opts(AppDir,
+                  default_include_opts(AppDir, DepsDir,
                       target_erl_opt(TargetErlDir,
                           target_hrl_opt(TargetHrlDir, GpbOpts0))))),
 
     compile(Protos, TargetErlDir, GpbOpts, Protos),
     ok.
 
--spec clean(rebar_app_info:t()) -> ok.
-clean(AppInfo) ->
+-spec clean(rebar_app_info:t(),
+            rebar_state:t()) -> ok.
+clean(AppInfo, _State) ->
     AppDir = rebar_app_info:dir(AppInfo),
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
@@ -179,11 +184,16 @@ ensure_dir(OutDir) ->
     {error, Reason} -> {error, Reason}
   end.
 
--spec default_include_opts(string(), proplists:proplist()) -> proplists:proplist().
-default_include_opts(AppDir, Opts) ->
-    Opts ++
-    [{i, filename:join(AppDir, Path)} || {i, Path} <- Opts] ++
-    [{i, filename:join(AppDir, Path)} || {ipath, Path} <- Opts].
+-spec default_include_opts(string(), string(), proplists:proplist()) -> proplists:proplist().
+default_include_opts(AppDir, DepsDir, Opts) ->
+    lists:map(fun({i, {deps, Path}}) ->
+                    {i, filename:join(DepsDir, Path)};
+                 ({i, Path}) ->
+                    {i, filename:join(AppDir, Path)};
+                 ({ipath, Path}) ->
+                    {i, filename:join(AppDir, Path)};
+                 (Opt) -> Opt
+              end, Opts).
 
 -spec target_erl_opt(string(), proplists:proplist()) -> proplists:proplist().
 target_erl_opt(Dir, Opts) ->

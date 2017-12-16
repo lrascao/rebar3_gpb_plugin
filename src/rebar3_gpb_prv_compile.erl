@@ -43,7 +43,9 @@ do(State) ->
             AppInfo ->
                 [AppInfo]
            end,
-    lists:foreach(fun rebar3_gpb_compiler:compile/1, Apps),
+    lists:foreach(fun(App) ->
+                    rebar3_gpb_compiler:compile(App, State)
+                  end, Apps),
     {ok, State}.
 
 -spec format_error(any()) ->  iolist().
