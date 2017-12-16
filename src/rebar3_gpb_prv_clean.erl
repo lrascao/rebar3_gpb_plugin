@@ -32,7 +32,9 @@ do(State) ->
                 undefined -> rebar_state:project_apps(State);
                 AppInfo   -> [AppInfo]
            end,
-    lists:foreach(fun rebar3_gpb_compiler:clean/1, Apps),
+    lists:foreach(fun(App) ->
+                    rebar3_gpb_compiler:clean(App, State)
+                  end, Apps),
     {ok, State}.
 
 -spec format_error(any()) -> iolist().
