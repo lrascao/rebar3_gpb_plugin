@@ -190,6 +190,8 @@ default_include_opts(AppDir, DepsDir, Opts) ->
                     {i, filename:join(DepsDir, Path)};
                  ({i, Path}) ->
                     {i, filename:join(AppDir, Path)};
+                 ({ipath, {deps, Path}}) ->
+                    {i, filename:join(DepsDir, Path)};
                  ({ipath, Path}) ->
                     {i, filename:join(AppDir, Path)};
                  (Opt) -> Opt
