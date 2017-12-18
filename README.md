@@ -47,7 +47,7 @@ Plugin specific options (can be used together the gpb ones):
 ```erlang
 {gpb_opts, [
     {recursive, boolean()},
-    {ipath, "path/to/another/proto_dir"}
+    {ipath, "path/to/another/proto_dir"} | {ipath, {deps, "path/from/deps/dir/to/another/proto/dir"}}
 ]}.
 ```
 
@@ -59,6 +59,8 @@ Plugin specific options (can be used together the gpb ones):
 * `{i, {deps, "relative/path/from/deps/to/proto_dir"}` - allows you to compile
   proto files that were declared and fetched as app dependencies, the [rebar_raw_resource](https://github.com/basho/rebar_raw_resource)
   plugin is a good fit for this use case.
+* `{ipath, {deps, "relative/path/from/deps/to/proto_dir"}` - allows you to specify
+  proto include paths in the same fashion as the `{i, {deps, _}}` directive.
 
 Add the gpb include path (environment tipically is default):
 
