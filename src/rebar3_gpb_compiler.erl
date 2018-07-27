@@ -170,6 +170,8 @@ compile(Source, Target, GpbOpts) ->
     case gpb_compile:file(filename:basename(Source), GpbOpts) of
         ok ->
             ok;
+        {ok, []} ->
+            ok;
         {error, Reason} ->
             ReasonStr = gpb_compile:format_error(Reason),
             rebar_utils:abort("failed to compile ~s: ~s~n", [Source, ReasonStr])
