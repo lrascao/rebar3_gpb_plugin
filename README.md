@@ -19,7 +19,7 @@ Add the plugin to your rebar config:
 {erl_opts, [{i, "./_build/default/plugins/gpb/include"}]}.
 
 {plugins, [
-    { rebar3_gpb_plugin, "2.8.0" }
+    { rebar3_gpb_plugin, "2.8.1" }
 ]}.
 ```
 
