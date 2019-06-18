@@ -11,7 +11,7 @@
 -define(DESC,"Configure gpb options (gbp_opts) in your rebar.config, e.g.\n"
              "  {gpb_opts,["
              "    {i, \"path/to/proto_dir\"},"
-             "    {r, \[list of wanted protobuf files\]},"
+             "    {f, \[list of wanted protobuf files\]},"
              "    {module_name_suffix, \"_pb\"},"
              "    {o_erl, \"path/to/out_src\"},"
              "    {o_hrl, \"path/to/out_include\"},"
