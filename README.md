@@ -28,6 +28,7 @@ Configure gpb options (example below), full list can consulted on [gpb's project
 ```erlang
 {gpb_opts, [
     {i, "path/to/proto_dir"} | {i, {deps, "relative/path/from/deps/to/proto_dir"}},
+    {r, [list_of_desired_proto_files]},
     {module_name_suffix, "_pb"},
     %{o, "path/to/out_dir"},    %% both .erl and .hrl are generated here
     {o_erl, "path/to/out_src"},

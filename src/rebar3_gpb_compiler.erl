@@ -24,6 +24,8 @@ compile(AppInfo, State) ->
     %% check if non-recursive
     Recursive = proplists:get_value(recursive, GpbOpts0, true),
     SourceDirs = proplists:get_all_values(i, GpbOpts0),
+
+
     TargetErlDir = filename:join([AppOutDir,
                                   proplists:get_value(o_erl, GpbOpts0,
                                                       ?DEFAULT_OUT_ERL_DIR)]),
@@ -36,23 +38,30 @@ compile(AppInfo, State) ->
     ok = ensure_dir(TargetHrlDir),
     rebar_api:debug("reading proto files from ~p, generating \".erl\" to ~p "
                     "and \".hrl\" to ~p",
-      [SourceDirs, TargetErlDir, TargetHrlDir]),
-
+                    [SourceDirs, TargetErlDir, TargetHrlDir]),
     %% search for .proto files
-    Protos = lists:foldl(fun({deps, SourceDir}, Acc) ->
-                                Acc ++ discover(DepsDir, SourceDir, [{recursive, Recursive}]);
-                            (SourceDir, Acc) ->
-                                Acc ++ discover(AppDir, SourceDir, [{recursive, Recursive}])
-                         end, [], SourceDirs),
+    FoundProtos = lists:foldl(fun({deps, SourceDir}, Acc) ->
+                                      Acc ++ discover(DepsDir, SourceDir, [{recursive, Recursive}]);
+                                 (SourceDir, Acc) ->
+                                      Acc ++ discover(AppDir, SourceDir, [{recursive, Recursive}])
+                              end, [], SourceDirs),
     rebar_api:debug("proto files found~s: ~p",
-      [case Recursive of true -> " recursively"; false -> "" end, Protos]),
+                    [case Recursive of true -> " recursively"; false -> "" end, FoundProtos]),
 
+    Protos = case proplists:get_value(f, GpbOpts0) of
+                 undefined ->
+                     FoundProtos;
+                 WantedProtos ->
+                     rebar_api:debug("Applying filter: ~p", [WantedProtos]),
+                     filter_unwanted_protos(WantedProtos, FoundProtos)
+             end,
+    rebar_api:debug("Filtered protos: ~p", [Protos]),
     %% set the full path for the output directories
     %% add to include path dir locations of the protos
     %% remove the plugin specific options since gpb will not understand them
     GpbOpts = remove_plugin_opts(
                 proto_include_paths(AppDir, Protos,
-                  default_include_opts(AppDir, DepsDir,
+                                    default_include_opts(AppDir, DepsDir,
                       target_erl_opt(TargetErlDir,
                           target_hrl_opt(TargetHrlDir, GpbOpts0))))),
 
@@ -152,12 +161,36 @@ filter_included_proto(Source, Dep, GpbOpts) ->
                                              GpbOpts ++ [to_proto_defs, return]),
     Imports = lists:map(fun(Import0) ->
                           {ok, Import} = gpb_compile:locate_import(Import0, GpbOpts),
-                          filename:absname(Import)
+                                filename:absname(Import)
                         end, lists:usort(gpb_parse:fetch_imports(Defs))),
     case lists:member(Dep, Imports) of
-      true -> {true, Source};
-      false -> false
+        true -> {true, Source};
+        false -> false
     end.
+
+
+find_first_match(WantedProto, []) ->
+    rebar_api:abort("Filtered proto file not found in path: ~p", [WantedProto]);
+
+find_first_match(WantedProto, [Head | RemainingProtos]) ->
+    case is_wanted_proto(WantedProto, Head)of
+        true ->
+            Head;
+        false ->
+            find_first_match(WantedProto, RemainingProtos)
+    end.
+
+
+is_wanted_proto(WantedProto, ProtoPath) ->
+    case string:find(ProtoPath, WantedProto, trailing) of
+        nomatch -> false;
+        _Match -> true
+    end.
+
+filter_unwanted_protos(WantedProtos, AllProtos) ->
+    [find_first_match(WantedProto, AllProtos) || WantedProto <- WantedProtos].
+
+
 
 target_file(Proto, ModuleNamePrefix, ModuleNameSuffix, TargetErlDir) ->
     Module = filename:basename(Proto, ".proto"),
