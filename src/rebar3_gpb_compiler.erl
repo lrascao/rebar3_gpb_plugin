@@ -61,7 +61,7 @@ compile(AppInfo, State) ->
     %% remove the plugin specific options since gpb will not understand them
     GpbOpts = remove_plugin_opts(
                 proto_include_paths(AppDir, Protos,
-                                    default_include_opts(AppDir, DepsDir,
+                  default_include_opts(AppDir, DepsDir,
                       target_erl_opt(TargetErlDir,
                           target_hrl_opt(TargetHrlDir, GpbOpts0))))),
 
@@ -161,7 +161,7 @@ filter_included_proto(Source, Dep, GpbOpts) ->
                                              GpbOpts ++ [to_proto_defs, return]),
     Imports = lists:map(fun(Import0) ->
                           {ok, Import} = gpb_compile:locate_import(Import0, GpbOpts),
-                                filename:absname(Import)
+                          filename:absname(Import)
                         end, lists:usort(gpb_parse:fetch_imports(Defs))),
     case lists:member(Dep, Imports) of
         true -> {true, Source};
