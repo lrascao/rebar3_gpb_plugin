@@ -20,7 +20,7 @@ init(State) ->
         {module, ?MODULE},
         {bare, true},
         {deps, ?DEPS},
-        {example, "rebar3 gpb clean"},
+        {example, "rebar3 protobuf clean"},
         {short_desc, ?DESC},
         {desc, ""},
         {opts, []}]),
