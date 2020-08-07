@@ -19,11 +19,11 @@ Add the plugin to your rebar config:
 {erl_opts, [{i, "./_build/default/plugins/gpb/include"}]}.
 
 {plugins, [
-    { rebar3_gpb_plugin, "2.15.0" }
+    { rebar3_gpb_plugin, "2.16.0" }
 ]}.
 ```
 
-Configure gpb options (example below), full list can consulted on [gpb's project page](https://github.com/tomas-abrahamsson/gpb) [gpb_compile:file/2](https://github.com/tomas-abrahamsson/gpb/blob/3.19.0/src/gpb_compile.erl#L66-L93):
+Configure gpb options (example below), full list can consulted on [gpb's project page](https://github.com/tomas-abrahamsson/gpb) [gpb_compile:file/2](https://hexdocs.pm/gpb/gpb_compile.html#file-2):
 
 ```erlang
 {gpb_opts, [
