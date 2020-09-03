@@ -88,9 +88,15 @@ clean(AppInfo, State) ->
                                                       ?DEFAULT_OUT_HRL_DIR)]),
     ProtoFiles = find_proto_files(AppDir, DepsDir, GpbOpts),
     rebar_api:debug("found proto files: ~p", [ProtoFiles]),
-    GeneratedRootFiles = [ModuleNamePrefix ++
-                          filename:rootname(filename:basename(ProtoFile)) ++
-                          ModuleNameSuffix || ProtoFile <- ProtoFiles],
+    GeneratedRootFiles =
+        case proplists:get_value(module_name, GpbOpts) of
+            undefined ->
+                [ModuleNamePrefix ++
+                 filename:rootname(filename:basename(ProtoFile)) ++
+                 ModuleNameSuffix || ProtoFile <- ProtoFiles];
+            ModuleNameFromOpt ->
+                [ModuleNameFromOpt]
+        end,
     GeneratedErlFiles = [filename:join([TargetErlDir, F ++ ".erl"]) ||
                             F <- GeneratedRootFiles],
     GeneratedHrlFiles = [filename:join([TargetHrlDir, F ++ ".hrl"]) ||
@@ -117,7 +123,8 @@ compile([Proto | Rest], TargetErlDir, GpbOpts, Protos) ->
                                            ?DEFAULT_MODULE_PREFIX),
     ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts,
                                            ?DEFAULT_MODULE_SUFFIX),
-    Target = target_file(Proto, ModuleNamePrefix, ModuleNameSuffix, TargetErlDir),
+    ModuleNameFromOpt = proplists:get_value(module_name, GpbOpts),
+    Target = target_file(Proto, ModuleNamePrefix, ModuleNameSuffix, ModuleNameFromOpt, TargetErlDir),
     Deps =
       case filelib:last_modified(Target) < filelib:last_modified(Proto) of
           true ->
@@ -131,7 +138,7 @@ compile([Proto | Rest], TargetErlDir, GpbOpts, Protos) ->
             %% now touch the targets of each of the deps so they get remade again
             lists:foreach(fun(Dep) ->
                             DepTarget = target_file(Dep, ModuleNamePrefix, ModuleNameSuffix,
-                                                    TargetErlDir),
+                                                    ModuleNameFromOpt, TargetErlDir),
                             %% we want to force compilation in this case so we must trick
                             %% the plugin into believing that the proto is more recent than the
                             %% target, this means we need to set the last changed time on the
@@ -192,9 +199,12 @@ filter_unwanted_protos(WantedProtos, AllProtos) ->
 
 
 
-target_file(Proto, ModuleNamePrefix, ModuleNameSuffix, TargetErlDir) ->
+target_file(Proto, ModuleNamePrefix, ModuleNameSuffix, undefined = _ModuleName, TargetErlDir) ->
     Module = filename:basename(Proto, ".proto"),
-    filename:join([TargetErlDir, ModuleNamePrefix ++ Module ++ ModuleNameSuffix ++ ".erl"]).
+    filename:join([TargetErlDir, ModuleNamePrefix ++ Module ++ ModuleNameSuffix ++ ".erl"]);
+target_file(_Proto, _ModuleNamePrefix, _ModuleNameSuffix, ModuleName, TargetErlDir) ->
+    Module = filename:basename(ModuleName, ".proto"),
+    filename:join([TargetErlDir, Module ++ ".erl"]).
 
 -spec compile(string(), string(), proplists:proplist()) -> ok.
 compile(Source, Target, GpbOpts) ->
