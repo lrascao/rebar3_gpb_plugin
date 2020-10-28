@@ -11,4 +11,4 @@ otp_release:
 before_script:
   - wget https://s3.amazonaws.com/rebar3/rebar3
   - chmod u+x rebar3
-script: "./rebar3 update && ./rebar3 compile"
+script: "./rebar3 update && ./rebar3 compile && ./rebar3 dialyzer"
