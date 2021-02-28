@@ -6,8 +6,6 @@
 -define(DEFAULT_PROTO_DIR, "proto").
 -define(DEFAULT_OUT_ERL_DIR, "src").
 -define(DEFAULT_OUT_HRL_DIR, "include").
--define(DEFAULT_MODULE_PREFIX, "").
--define(DEFAULT_MODULE_SUFFIX, "").
 
 %% ===================================================================
 %% Public API
@@ -76,10 +74,6 @@ clean(AppInfo, State) ->
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts} = dict:find(gpb_opts, Opts),
-    ModuleNamePrefix = proplists:get_value(module_name_prefix, GpbOpts,
-                                           ?DEFAULT_MODULE_PREFIX),
-    ModuleNameSuffix = proplists:get_value(module_name_suffix, GpbOpts,
-                                           ?DEFAULT_MODULE_SUFFIX),
     TargetErlDir = filename:join([AppOutDir,
                                   proplists:get_value(o_erl, GpbOpts,
                                                       ?DEFAULT_OUT_ERL_DIR)]),
@@ -89,14 +83,9 @@ clean(AppInfo, State) ->
     ProtoFiles = find_proto_files(AppDir, DepsDir, GpbOpts),
     rebar_api:debug("found proto files: ~p", [ProtoFiles]),
     GeneratedRootFiles =
-        case proplists:get_value(module_name, GpbOpts) of
-            undefined ->
-                [ModuleNamePrefix ++
-                 filename:rootname(filename:basename(ProtoFile)) ++
-                 ModuleNameSuffix || ProtoFile <- ProtoFiles];
-            ModuleNameFromOpt ->
-                [ModuleNameFromOpt]
-        end,
+        lists:usort(
+          [filename:rootname(get_target(ProtoFile, GpbOpts))
+           || ProtoFile <- ProtoFiles]),
     GeneratedErlFiles = [filename:join([TargetErlDir, F ++ ".erl"]) ||
                             F <- GeneratedRootFiles],
     GeneratedHrlFiles = [filename:join([TargetHrlDir, F ++ ".hrl"]) ||
