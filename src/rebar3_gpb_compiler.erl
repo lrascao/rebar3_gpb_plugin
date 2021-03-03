@@ -7,6 +7,8 @@
 -define(DEFAULT_OUT_ERL_DIR, "src").
 -define(DEFAULT_OUT_HRL_DIR, "include").
 
+-define(f(Fmt, Args), lists:flatten(io_lib:format(Fmt, Args))).
+
 %% ===================================================================
 %% Public API
 %% ===================================================================
@@ -84,7 +86,10 @@ clean(AppInfo, State) ->
     rebar_api:debug("found proto files: ~p", [ProtoFiles]),
     GeneratedRootFiles =
         lists:usort(
-          [filename:rootname(get_target(ProtoFile, GpbOpts))
+          [begin
+               ProtoGpbOpts = get_proto_gpb_opts(ProtoFile, GpbOpts),
+               filename:rootname(get_target(ProtoFile, ProtoGpbOpts))
+           end
            || ProtoFile <- ProtoFiles]),
     GeneratedErlFiles = [filename:join([TargetErlDir, F ++ ".erl"]) ||
                             F <- GeneratedRootFiles],
@@ -109,19 +114,21 @@ discover(AppDir, SourceDir, Opts) ->
 compile([], _TargetErlDir, _GpbOpts, _Protos) -> ok;
 compile([Proto | Rest], TargetErlDir, GpbOpts, Protos) ->
     Target = get_target(Proto, GpbOpts),
+    ProtoGpbOpts = get_proto_gpb_opts(Proto, GpbOpts),
     Deps =
       case filelib:last_modified(Target) < filelib:last_modified(Proto) of
           true ->
-            ok = compile(Proto, Target, GpbOpts),
+            ok = compile(Proto, Target, ProtoGpbOpts),
             %% now we know that this proto needed compilation we check
             %% for other protos that might have included this one and ensure that
             %% those are compiled as well
-            Deps0 = get_dependencies(Proto, Protos, GpbOpts),
+            Deps0 = get_dependencies(Proto, Protos, ProtoGpbOpts),
             rebar_api:debug("protos that include ~p: ~p",
               [Proto, Deps0]),
             %% now touch the targets of each of the deps so they get remade again
             lists:foreach(fun(Dep) ->
-                            DepTarget = get_target(Dep, GpbOpts),
+                            DepGpbOpts = get_proto_gpb_opts(Dep, GpbOpts),
+                            DepTarget = get_target(Dep, DepGpbOpts),
                             %% we want to force compilation in this case so we must trick
                             %% the plugin into believing that the proto is more recent than the
                             %% target, this means we need to set the last changed time on the
@@ -186,9 +193,11 @@ filter_unwanted_protos(WantedProtos, AllProtos) ->
 
 -spec compile(string(), string(), proplists:proplist()) -> ok.
 compile(Source, Target, GpbOpts) ->
+    {ProtoGpbOpts, Info} = get_proto_gpb_opts_with_info(Source, GpbOpts),
+    OriginText = [?f(" (~s)", [Info]) || Info =/= ""],
     rebar_api:debug("compiling ~p to ~p", [Source, Target]),
-    rebar_api:debug("opts: ~p", [GpbOpts]),
-    case gpb_compile:file(filename:basename(Source), GpbOpts) of
+    rebar_api:debug("opts~s:~n  ~p", [OriginText, ProtoGpbOpts]),
+    case gpb_compile:file(filename:basename(Source), ProtoGpbOpts) of
         ok ->
             ok;
         {ok, []} ->
@@ -257,3 +266,86 @@ proto_include_paths(_AppDir, [], Opts) -> Opts;
 proto_include_paths(AppDir, [Proto | Protos], Opts) ->
   ProtoDir = filename:join([AppDir, filename:dirname(Proto)]),
   proto_include_paths(AppDir, Protos, Opts ++ [{i, ProtoDir}]).
+
+%% Allow to override options per .proto. If no special override is found,
+%% the GpbOpts is used.  The idea is that GpbOpts can look like this:
+%%
+%%  [...
+%%   Common gpb opts
+%%   These will be used if no per-proto override is specified
+%%   NB: Currently output-dir options cannot be overridden
+%%       ie, any common {o,Dir}, {o_erl,Dir} or {o_hrl,Dir} are used
+%%   ...
+%%   {per_proto_override,
+%%    [{"dir1/a.proto", [{module_name_prefix, "dir1_"}]},
+%%     {"dir2/a.proto", [{module_name_prefix, "dir2_"}]},
+%%     {"dir2/b.proto", {replace,    % <-- means to override all common options
+%%                       [{verify, false}, ...]}},
+%%     {"dir2/c.proto", {merge,    % <-- means to prepend to common options,
+%%                                 %     this is the default,
+%%                                 %     as in the a.proto examples above
+%%                       [{verify, false}, ...]}}]}]
+%%
+get_proto_gpb_opts(ProtoFile, GpbOpts) ->
+    {GpbOpts2, _Info} = get_proto_gpb_opts_with_info(ProtoFile, GpbOpts),
+    GpbOpts2.
+
+get_proto_gpb_opts_with_info(ProtoFile, GpbOpts) ->
+    case proplists:get_value(per_proto_override, GpbOpts) of
+        undefined ->
+            {GpbOpts, "no overrides"};
+        ProtoSpecificGpbOpts ->
+            case locate_proto_specific_opts(ProtoFile, ProtoSpecificGpbOpts) of
+                {found, {merge, ProtoGpbOpts}, MatchingKey} ->
+                    Info = ?f("options from ~p were prepended", [MatchingKey]),
+                    {ProtoGpbOpts ++ GpbOpts, Info};
+                {found, {replace, ProtoGpbOpts}, MatchingKey} ->
+                    Info = ?f("options from ~p were used", [MatchingKey]),
+                    {ProtoGpbOpts, Info};
+                not_found ->
+                    {GpbOpts, ""}
+            end
+    end.
+
+locate_proto_specific_opts(ProtoFile, [{ProtoName, PerProtoOpts} | Rest]) ->
+    case tail_of_path_matches(ProtoFile, ProtoName) of
+        true ->
+            case PerProtoOpts of
+                {merge, MoreOpts} ->
+                    rebar_api:debug("Per-proto entry for ~p matches, "
+                                    "indicating merge", [ProtoName]),
+                    {found, {merge, MoreOpts}, ProtoName};
+                {replace, NewOpts} ->
+                    rebar_api:debug("Per-proto entry for ~p matches, "
+                                    "indicating replace", [ProtoName]),
+                    {found, {replace, NewOpts}, ProtoName};
+                _ when is_list(PerProtoOpts) ->
+                    rebar_api:debug("Per-proto entry for ~p matches, "
+                                    "will merge opts", [ProtoName]),
+                    {found, {merge, PerProtoOpts}, ProtoName};
+                _ ->
+                    rebar_api:error("Invalid entry for ~p, expecting"
+                                    "Opts, {merge, Opts} or {replace, Opts}. "
+                                    "Ignoring this.",
+                                    [ProtoName]),
+                    not_found
+            end;
+        false ->
+            locate_proto_specific_opts(ProtoName, Rest)
+    end;
+locate_proto_specific_opts(_ProtoFile, []) ->
+    not_found.
+
+%% Check whether tails matches. Example
+%%   tail_of_path_matches("/home/user/a/b/c/d.proto", "d.proto") -> true
+%%   tail_of_path_matches("/home/user/a/b/c/d.proto", "c/d.proto") -> true
+%%   tail_of_path_matches("/home/user/a/b/c/d.proto", "b/c/d.proto") -> true
+%%   tail_of_path_matches("/home/user/a/b/c/d.proto", "x.proto") -> false
+%%   tail_of_path_matches("/home/user/a/b/c/d.proto", "c/x.proto") -> false
+tail_of_path_matches(ProtoFile, ProtoOptKey) ->
+    tail_matches(lists:reverse(filename:split(ProtoFile)),
+                     lists:reverse(filename:split(ProtoOptKey))).
+
+tail_matches([Same | Rest1], [Same | Rest2]) -> tail_matches(Rest1, Rest2);
+tail_matches(_, []) -> true;
+tail_matches(_, _) -> false.
