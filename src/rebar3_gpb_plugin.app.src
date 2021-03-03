@@ -1,6 +1,6 @@
 {application, rebar3_gpb_plugin, [
         {description, "A rebar3 gpb plugin for compiling .proto files"},
-        {vsn, "2.19.0"},
+        {vsn, "2.19.1"},
         {registered, []},
         {applications,
             [
