@@ -1,7 +1,7 @@
 Rebar3 gpb plugin
 =====
 
-[![Build Status](https://travis-ci.org/lrascao/rebar3_gpb_plugin.svg?branch=master)](https://travis-ci.org/lrascao/rebar3_gpb_plugin)
+[![Build Status](https://github.com/lrascao/rebar3_gpb_plugin/workflows/build/badge.svg)](https://github.com/lrascao/rebar3_gpb_plugin)
 
 A rebar3 plugin for automatically compiling .proto files using the gpb protobuf compiler
 
