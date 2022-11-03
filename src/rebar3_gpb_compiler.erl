@@ -18,8 +18,6 @@ compile(AppInfo, State) ->
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
     {ok, GpbOpts0} = dict:find(gpb_opts, Opts),
-    %% check if non-recursive
-    Recursive = proplists:get_value(recursive, GpbOpts0, true),
     SourceDirs = proplists:get_all_values(i, GpbOpts0),
 
 
@@ -37,13 +35,7 @@ compile(AppInfo, State) ->
                     "and \".hrl\" to ~p",
                     [SourceDirs, TargetErlDir, TargetHrlDir]),
     %% search for .proto files
-    FoundProtos = lists:foldl(fun({deps, SourceDir}, Acc) ->
-                                      Acc ++ discover(DepsDir, SourceDir, [{recursive, Recursive}]);
-                                 (SourceDir, Acc) ->
-                                      Acc ++ discover(AppDir, SourceDir, [{recursive, Recursive}])
-                              end, [], SourceDirs),
-    rebar_api:debug("proto files found~s: ~p",
-                    [case Recursive of true -> " recursively"; false -> "" end, FoundProtos]),
+    FoundProtos = find_proto_files(AppDir, DepsDir, GpbOpts0),
 
     Protos = case proplists:get_value(f, GpbOpts0) of
                  undefined ->
@@ -80,7 +72,6 @@ clean(AppInfo, State) ->
                                   proplists:get_value(o_hrl, GpbOpts,
                                                       ?DEFAULT_OUT_HRL_DIR)]),
     ProtoFiles = find_proto_files(AppDir, DepsDir, GpbOpts),
-    rebar_api:debug("found proto files: ~p", [ProtoFiles]),
     GeneratedRootFiles =
         lists:usort(
           [filename:rootname(get_target(ProtoFile, GpbOpts))
@@ -96,11 +87,10 @@ clean(AppInfo, State) ->
 %% ===================================================================
 %% Private API
 %% ===================================================================
-discover(AppDir, SourceDir, Opts) ->
+discover(AppDir, SourceDir, Recursive) ->
     %% Convert simple extension to proper regex
     SourceExtRe = "^[^._].*\\" ++ ".proto" ++ [$$],
 
-    Recursive = proplists:get_value(recursive, Opts, true),
     SearchDirectory = filename:join([AppDir, SourceDir]),
     rebar_api:debug("searching .proto files from ~p [recursive=~p]",
                     [SearchDirectory, Recursive]),
@@ -244,16 +234,17 @@ remove_plugin_opts(Opts0, [OptToRemove | Rest]) ->
     remove_plugin_opts(Opts, Rest).
 
 find_proto_files(AppDir, DepsDir, GpbOpts) ->
-    lists:foldl(fun({deps, SourceDir}, Acc) ->
-                    Acc ++ rebar_utils:find_files(
-                             filename:join(DepsDir, SourceDir),
-                                           ".*\.proto\$");
-                   (SourceDir, Acc) ->
-                    Acc ++ rebar_utils:find_files(
-                             filename:join(AppDir, SourceDir),
-                                           ".*\.proto\$")
-                end,
-                [], proplists:get_all_values(i, GpbOpts)).
+    %% check if non-recursive
+    Recursive = proplists:get_value(recursive, GpbOpts, true),
+    SourceDirs = proplists:get_all_values(i, GpbOpts),
+    FoundProtos = lists:foldl(fun({deps, SourceDir}, Acc) ->
+                                      Acc ++ discover(DepsDir, SourceDir, Recursive);
+                                 (SourceDir, Acc) ->
+                                      Acc ++ discover(AppDir, SourceDir, Recursive)
+                              end, [], SourceDirs),
+    rebar_api:debug("proto files found~s: ~p",
+                    [case Recursive of true -> " recursively"; false -> "" end, FoundProtos]),
+    FoundProtos.
 
 proto_include_paths(_AppDir, [], Opts) -> Opts;
 proto_include_paths(AppDir, [Proto | Protos], Opts) ->
