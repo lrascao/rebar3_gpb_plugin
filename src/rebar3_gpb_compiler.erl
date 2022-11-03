@@ -84,7 +84,7 @@ clean(AppInfo, State) ->
     rebar_api:debug("found proto files: ~p", [ProtoFiles]),
     GeneratedRootFiles =
         lists:usort(
-          [filename:rootname(get_target(ProtoFile, GpbOpts))
+          [filename:rootname(filename:basename(get_target(ProtoFile, GpbOpts)))
            || ProtoFile <- ProtoFiles]),
     GeneratedErlFiles = [filename:join([TargetErlDir, F ++ ".erl"]) ||
                             F <- GeneratedRootFiles],
