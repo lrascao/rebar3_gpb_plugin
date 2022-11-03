@@ -3,7 +3,6 @@
 -export([compile/2,
          clean/2]).
 
--define(DEFAULT_PROTO_DIR, "proto").
 -define(DEFAULT_OUT_ERL_DIR, "src").
 -define(DEFAULT_OUT_HRL_DIR, "include").
 
@@ -63,7 +62,7 @@ compile(AppInfo, State) ->
                       target_erl_opt(TargetErlDir,
                           target_hrl_opt(TargetHrlDir, GpbOpts0))))),
 
-    compile(Protos, TargetErlDir, GpbOpts, Protos),
+    compile(Protos, GpbOpts, Protos),
     ok.
 
 -spec clean(rebar_app_info:t(),
@@ -109,13 +108,13 @@ discover(AppDir, SourceDir, Opts) ->
     rebar_utils:find_files(SearchDirectory,
                            SourceExtRe, Recursive).
 
-compile([], _TargetErlDir, _GpbOpts, _Protos) -> ok;
-compile([Proto | Rest], TargetErlDir, GpbOpts, Protos) ->
+compile([], _GpbOpts, _Protos) -> ok;
+compile([Proto | Rest], GpbOpts, Protos) ->
     Target = get_target(Proto, GpbOpts),
     Deps =
       case filelib:last_modified(Target) < filelib:last_modified(Proto) of
           true ->
-            ok = compile(Proto, Target, GpbOpts),
+            ok = do_compile(Proto, Target, GpbOpts),
             %% now we know that this proto needed compilation we check
             %% for other protos that might have included this one and ensure that
             %% those are compiled as well
@@ -139,7 +138,7 @@ compile([Proto | Rest], TargetErlDir, GpbOpts, Protos) ->
           false ->
               []
       end,
-    compile(Rest ++ Deps, TargetErlDir, GpbOpts, Protos).
+    compile(Rest ++ Deps, GpbOpts, Protos).
 
 get_target(Proto, GpbOpts) ->
     InputsOutputs = gpb_compile:list_io(Proto, GpbOpts),
@@ -178,7 +177,7 @@ find_first_match(WantedProto, [Head | RemainingProtos]) ->
 
 is_wanted_proto(WantedProto, ProtoPath) ->
     case string:sub_string(ProtoPath, length(ProtoPath) - length(WantedProto) + 1) of
-        WantedProto -> true;
+        Result when Result == WantedProto -> true;
         _Other -> false
     end.
 
@@ -187,8 +186,8 @@ filter_unwanted_protos(WantedProtos, AllProtos) ->
 
 
 
--spec compile(string(), string(), proplists:proplist()) -> ok.
-compile(Source, Target, GpbOpts) ->
+-spec do_compile(string(), string(), proplists:proplist()) -> ok.
+do_compile(Source, Target, GpbOpts) ->
     rebar_api:debug("compiling ~p to ~p", [Source, Target]),
     rebar_api:debug("opts: ~p", [GpbOpts]),
     case gpb_compile:file(filename:basename(Source), GpbOpts) of
@@ -198,7 +197,7 @@ compile(Source, Target, GpbOpts) ->
             ok;
         {error, Reason} ->
             ReasonStr = gpb_compile:format_error(Reason),
-            rebar_utils:abort("failed to compile ~s: ~s~n", [Source, ReasonStr])
+            rebar_utils:abort("failed to do_compile ~s: ~s~n", [Source, ReasonStr])
     end.
 
 -spec ensure_dir(filelib:dirname()) -> 'ok' | {error, Reason::file:posix()}.
