@@ -10,19 +10,29 @@ on:
 
 jobs:
   linux:
-    name: Test on OTP ${{ matrix.otp_version }} and ${{ matrix.os }}
-    runs-on: ${{ matrix.os }}
+    name: Test on OTP ${{ matrix.combo.otp-version }} and ${{ matrix.combo.os }}
+    runs-on: ${{ matrix.combo.os }}
 
     strategy:
+      fail-fast: false
       matrix:
-        otp_version: [23, 24, 25]
-        os: [ubuntu-latest]
+        combo:
+          - os: 'ubuntu-20.04'
+            otp-version: '23'
+            rebar3-version: '3.16'
+          - os: 'ubuntu-latest'
+            otp-version: '24'
+            rebar3-version: '3.16'
+          - os: 'ubuntu-latest'
+            otp-version: '25'
+            rebar3-version: '3.16'
 
     steps:
     - uses: actions/checkout@v2
     - uses: erlef/setup-beam@v1
       with:
-        otp-version: ${{ matrix.otp_version }}
+        otp-version: ${{ matrix.combo.otp-version }}
+        rebar3-version: ${{ matrix.combo.rebar3-version }}
     - name: Update
       run: rebar3 update
     - name: Compile
