@@ -41,7 +41,7 @@ compile(AppInfo, State) ->
     rebar_api:debug("making sure that target hrl dir ~p exists", [TargetHrlDir]),
     ok = ensure_dir(TargetHrlDir),
     rebar_api:debug("making sure that target nif dir ~p exists", [TargetNifDir]),
-    ok = ensure_dir(TargetHrlDir),
+    ok = ensure_dir(TargetNifDir),
     rebar_api:debug("reading proto files from ~p, generating \".erl\" to ~p "
                     "and \".hrl\" to ~p",
                     [SourceDirs, TargetErlDir, TargetHrlDir]),
