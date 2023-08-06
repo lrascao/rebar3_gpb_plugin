@@ -1,0 +1,35 @@
+NoUnknown =
+    case list_to_integer(erlang:system_info(otp_release)) of
+        N when N >= 26 ->
+            %% Don't warn about unknown functions and types (of rebar3)
+            [no_unknown];
+	_N ->
+	    []
+    end.
+[
+    {minimum_otp_vsn, "19.3"},
+
+    {erl_opts, [
+        debug_info,
+        warn_export_all,
+        warn_export_vars,
+        warn_missing_spec,
+        warn_obsolete_guard,
+        warn_shadow_vars,
+        warn_unused_import,
+        warnings_as_errors
+    ]},
+
+    {deps, [
+        {'gpb', "~> 4.0"}
+    ]},
+
+    {dialyzer, [
+        {warnings,
+            NoUnknown ++ [
+            unmatched_returns,
+            error_handling,
+            underspecs
+        ]}
+    ]}
+].
