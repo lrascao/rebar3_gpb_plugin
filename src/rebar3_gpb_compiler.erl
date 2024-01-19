@@ -102,8 +102,11 @@ discover(AppDir, SourceDir, Opts) ->
     SourceExtRe = "^[^._].*\\" ++ ".proto" ++ [$$],
 
     Recursive = proplists:get_value(recursive, Opts, true),
+    SearchDirectory = filename:join([AppDir, SourceDir]),
+    rebar_api:debug("searching .proto files from ~p [recursive=~p]",
+                    [SearchDirectory, Recursive]),
     %% Find all possible source files
-    rebar_utils:find_files(filename:join([AppDir, SourceDir]),
+    rebar_utils:find_files(SearchDirectory,
                            SourceExtRe, Recursive).
 
 compile([], _TargetErlDir, _GpbOpts, _Protos) -> ok;
