@@ -249,4 +249,10 @@ find_proto_files(AppDir, DepsDir, GpbOpts) ->
 proto_include_paths(_AppDir, [], Opts) -> Opts;
 proto_include_paths(AppDir, [Proto | Protos], Opts) ->
   ProtoDir = filename:join([AppDir, filename:dirname(Proto)]),
-  proto_include_paths(AppDir, Protos, Opts ++ [{i, ProtoDir}]).
+  IncludeProtoDirOpt = {i, ProtoDir},
+  case lists:member(IncludeProtoDirOpt, Opts) of
+      true ->
+          proto_include_paths(AppDir, Protos, Opts);
+      false ->
+          proto_include_paths(AppDir, Protos, Opts ++ [IncludeProtoDirOpt])
+  end.
