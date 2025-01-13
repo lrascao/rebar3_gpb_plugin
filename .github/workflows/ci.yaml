@@ -18,14 +18,14 @@ jobs:
       matrix:
         combo:
           - os: 'ubuntu-latest'
-            otp-version: '24'
-            rebar3-version: '3.16'
-          - os: 'ubuntu-latest'
             otp-version: '25'
             rebar3-version: '3.16'
           - os: 'ubuntu-latest'
             otp-version: '26'
             rebar3-version: '3.22.1'
+          - os: 'ubuntu-latest'
+            otp-version: '27'
+            rebar3-version: '3.24.0'
 
     steps:
     - uses: actions/checkout@v2
