@@ -21,7 +21,7 @@ NoUnknown =
     ]},
 
     {deps, [
-        {'gpb', "~> 4.0"}
+        {'gpb', "~> 5.0"}
     ]},
 
     {dialyzer, [
