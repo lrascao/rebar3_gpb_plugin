@@ -64,14 +64,15 @@ clean(AppInfo, State) ->
     DepsDir = rebar_dir:deps_dir(State),
     AppOutDir = rebar_app_info:out_dir(AppInfo),
     Opts = rebar_app_info:opts(AppInfo),
-    {ok, GpbOpts} = dict:find(gpb_opts, Opts),
+    {ok, GpbOpts0} = dict:find(gpb_opts, Opts),
     TargetErlDir = filename:join([AppOutDir,
-                                  proplists:get_value(o_erl, GpbOpts,
+                                  proplists:get_value(o_erl, GpbOpts0,
                                                       ?DEFAULT_OUT_ERL_DIR)]),
     TargetHrlDir = filename:join([AppOutDir,
-                                  proplists:get_value(o_hrl, GpbOpts,
+                                  proplists:get_value(o_hrl, GpbOpts0,
                                                       ?DEFAULT_OUT_HRL_DIR)]),
-    ProtoFiles = find_proto_files(AppDir, DepsDir, GpbOpts),
+    GpbOpts = remove_plugin_opts(default_include_opts(AppDir, DepsDir, GpbOpts0)),
+    ProtoFiles = find_proto_files(AppDir, DepsDir, GpbOpts0),
     GeneratedRootFiles =
         lists:usort(
           [filename:rootname(filename:basename(get_target(ProtoFile, GpbOpts)))
